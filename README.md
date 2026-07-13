@@ -106,6 +106,43 @@ On Windows: Open Settings -> Power & Sleep and switch the computer sleep configu
 
 Rebel Wheels and Tires © 2026 — Built Lean, Operating Efficiently.
 
+## Meta Publishing Setup
+
+Use the local OAuth helper instead of manually copying Graph API Explorer tokens.
+
+1. In the Meta app dashboard, add this OAuth redirect URI:
+
+```text
+http://localhost:3456/callback
+```
+
+2. Add these values to `.env`:
+
+```text
+META_APP_ID=
+META_APP_SECRET=
+META_REDIRECT_URI=http://localhost:3456/callback
+```
+
+3. Run:
+
+```bash
+npm run meta:auth
+```
+
+4. Open the printed URL, approve the Page and Instagram permissions, and return to the terminal.
+
+The script exchanges the OAuth code for a long-lived token, finds the Facebook Page, finds the connected Instagram professional account, and updates `.env` with:
+
+```text
+META_ACCESS_TOKEN=
+FACEBOOK_PAGE_ID=
+FACEBOOK_PAGE_ACCESS_TOKEN=
+INSTAGRAM_ACCOUNT_ID=
+```
+
+Keep `DRY_RUN=true` until dry-run flyer previews look right and the credentials have been validated.
+
 
 ***
 
