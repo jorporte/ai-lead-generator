@@ -18,6 +18,8 @@ const DATA_OUTPUT_PATH = path.join(__dirname, '../data/raw_inventory.json');
 const waitOptions = { waitUntil: 'load' as const, timeout: 60000 };
 
 export async function runScraper() {
+    ensureRuntimeDirectories();
+
     const hasSession = fs.existsSync(STORAGE_STATE_PATH);
     const browser = await chromium.launch({ headless: true }); 
     const context = await browser.newContext(hasSession ? { storageState: STORAGE_STATE_PATH } : {});
@@ -131,6 +133,11 @@ export async function runScraper() {
     } finally {
         await browser.close();
     }
+}
+
+function ensureRuntimeDirectories() {
+    fs.mkdirSync(path.dirname(STORAGE_STATE_PATH), { recursive: true });
+    fs.mkdirSync(path.dirname(DATA_OUTPUT_PATH), { recursive: true });
 }
 
 async function resolveHighResImage(page: Page, deal: TireDeal) {
