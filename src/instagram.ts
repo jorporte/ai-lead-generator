@@ -234,10 +234,15 @@ async function publishInstagramContainer(instagramAccountId: string, accessToken
 
 async function publishFacebookPhotos(publicImageUrls: string[], caption: string) {
     const pageId = process.env.FACEBOOK_PAGE_ID;
-    const pageAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
 
-    if (!pageId || !pageAccessToken) {
+    if (!pageId) {
         console.log('📋 Facebook Page credentials missing. Skipping Facebook publish.');
+        return;
+    }
+
+    const pageAccessToken = await getFacebookPageAccessToken(pageId);
+    if (!pageAccessToken) {
+        console.log('📋 Facebook Page access token unavailable. Skipping Facebook publish.');
         return;
     }
 
@@ -269,6 +274,24 @@ async function publishFacebookPhotos(publicImageUrls: string[], caption: string)
         message: caption,
         access_token: pageAccessToken
     });
+}
+
+async function getFacebookPageAccessToken(pageId: string) {
+    if (process.env.FACEBOOK_PAGE_ACCESS_TOKEN) {
+        return process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+    }
+
+    const metaAccessToken = process.env.META_ACCESS_TOKEN;
+    if (!metaAccessToken) return null;
+
+    const response = await axios.get(`https://graph.facebook.com/v19.0/${pageId}`, {
+        params: {
+            fields: 'access_token',
+            access_token: metaAccessToken,
+        },
+    });
+
+    return response.data.access_token as string | undefined;
 }
 
 function buildCarouselCaption(preparedDeals: PreparedDeal[]) {

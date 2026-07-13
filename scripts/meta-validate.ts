@@ -7,11 +7,11 @@ async function main() {
     const metaAccessToken = requiredEnv('META_ACCESS_TOKEN');
     const facebookPageId = requiredEnv('FACEBOOK_PAGE_ID');
     const instagramAccountId = requiredEnv('INSTAGRAM_ACCOUNT_ID');
-    const facebookPageAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || metaAccessToken;
 
     console.log('\nValidating Meta publishing configuration...\n');
 
     await validateToken(metaAccessToken);
+    const facebookPageAccessToken = await getFacebookPageAccessToken(facebookPageId, metaAccessToken);
     await validatePage(facebookPageId, facebookPageAccessToken);
     await validateInstagramAccount(instagramAccountId, metaAccessToken);
     await validatePageInstagramConnection(facebookPageId, facebookPageAccessToken, instagramAccountId);
@@ -25,6 +25,28 @@ function requiredEnv(name: string) {
         throw new Error(`${name} is required in .env.`);
     }
     return value;
+}
+
+async function getFacebookPageAccessToken(pageId: string, metaAccessToken: string) {
+    if (process.env.FACEBOOK_PAGE_ACCESS_TOKEN) {
+        console.log('Using FACEBOOK_PAGE_ACCESS_TOKEN from .env.');
+        return process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+    }
+
+    const response = await axios.get(`https://graph.facebook.com/${GRAPH_VERSION}/${pageId}`, {
+        params: {
+            fields: 'access_token',
+            access_token: metaAccessToken,
+        },
+    });
+
+    const pageAccessToken = response.data.access_token as string | undefined;
+    if (!pageAccessToken) {
+        throw new Error('Could not derive a Facebook Page access token from META_ACCESS_TOKEN.');
+    }
+
+    console.log('Derived Facebook Page access token from META_ACCESS_TOKEN.');
+    return pageAccessToken;
 }
 
 async function validateToken(accessToken: string) {
