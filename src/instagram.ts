@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { isDryRun } from './config';
 
 function getSupabaseClient() {
     const url = process.env.SUPABASE_URL;
@@ -42,8 +43,6 @@ export async function publishDailyDeals(tireData: any) {
     console.log(`🎨 Generating social flyer canvas asset for ${brand} — Market retail target: $${markedUpPrice.toFixed(2)} (+ Tax)`);
 
     try {
-        const supabase = getSupabaseClient();
-
         let tireImageBuffer: Buffer;
         if (tireData.highResImageUrl) {
             const imageResponse = await axios.get(tireData.highResImageUrl, { responseType: 'arraybuffer' });
@@ -86,6 +85,24 @@ export async function publishDailyDeals(tireData: any) {
         .jpeg({ quality: 95 })
         .toBuffer();
 
+        const caption = buildLeadCaption({
+            brand,
+            model,
+            tireSize,
+            markedUpPrice,
+            setsCount,
+            segment: tireData.segment,
+        });
+
+        if (isDryRun()) {
+            console.log('🧪 DRY_RUN enabled. Flyer generated in memory; Supabase, Instagram, and Facebook publishing skipped.');
+            console.log(`🧪 Generated flyer bytes: ${finalFlyerBuffer.length}`);
+            console.log(`🧪 Caption preview:\n${caption}`);
+            return;
+        }
+
+        const supabase = getSupabaseClient();
+
         const fileName = `deal_${Date.now()}.jpg`;
         const { data: storageData, error: storageError } = await supabase.storage
             .from('RebelMarketing') 
@@ -96,16 +113,6 @@ export async function publishDailyDeals(tireData: any) {
         const { data: urlData } = supabase.storage.from('RebelMarketing').getPublicUrl(fileName);
         const publicImageUrl = urlData.publicUrl;
         console.log(`✅ Media hosted on cloud storage: ${publicImageUrl}`);
-
-        // Direct, transparent, "Robin Hood" style caption
-        const caption = buildLeadCaption({
-            brand,
-            model,
-            tireSize,
-            markedUpPrice,
-            setsCount,
-            segment: tireData.segment,
-        });
 
         const instagramAccountId = process.env.INSTAGRAM_ACCOUNT_ID;
         const accessToken = process.env.META_ACCESS_TOKEN;

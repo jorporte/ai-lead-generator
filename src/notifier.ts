@@ -1,6 +1,7 @@
 // src/notifier.ts
 import axios from 'axios';
 import type { GroupedDeals, TireDeal } from './analyzer';
+import { isDryRun } from './config';
 
 export async function sendTelegramAlert(groupedBySize: GroupedDeals) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -40,6 +41,12 @@ export async function sendTelegramAlert(groupedBySize: GroupedDeals) {
         message += `• Cost: $${topDeal.salePrice.toFixed(2)} (Reg: $${topDeal.baselinePrice.toFixed(2)})\n`;
         message += `• Margin: ${Math.round(topDeal.discountPercent)}% OFF\n`;
         message += `• Stock: ${topDeal.quantityAvailable} units\n\n`;
+    }
+
+    if (isDryRun()) {
+        console.log('🧪 DRY_RUN enabled. Telegram digest skipped.');
+        console.log(message);
+        return;
     }
 
     const url = `https://api.telegram.org/bot${token}/sendMessage`;

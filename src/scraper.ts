@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { sendTelegramAlert } from './notifier';
 import { publishDailyDeals } from './instagram';
+import { isDryRun } from './config';
 import {
     EXPANDED_TIRE_SIZES,
     type GroupedDeals,
@@ -114,7 +115,11 @@ export async function runScraper() {
         console.log(`📌 Selected ${dealsToPost.length} deal(s) for automatic social posting.`);
 
         for (const deal of dealsToPost) {
+            console.log(`🎯 Selected ${deal.segment || 'general'} deal: ${deal.scannedSize} ${deal.brand} ${deal.model} at $${deal.salePrice.toFixed(2)} (${deal.discountPercent}% off, ${deal.quantityAvailable} units).`);
             const finalImage = await resolveHighResImage(page, deal);
+            if (isDryRun()) {
+                console.log(`🧪 DRY_RUN enabled. Resolved image candidate: ${finalImage || 'none'}`);
+            }
             await publishDailyDeals({ ...deal, highResImageUrl: finalImage, size: deal.scannedSize, price: deal.salePrice });
         }
     } finally {
