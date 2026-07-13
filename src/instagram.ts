@@ -287,10 +287,14 @@ function buildCarouselCaption(preparedDeals: PreparedDeal[]) {
 }
 
 function formatSegment(segment: string) {
-    return segment
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+    const labels: Record<string, string> = {
+        commuter: 'Commuter',
+        'crossover-suv': 'Crossover / SUV',
+        'truck-lt': 'Truck / LT',
+        'off-road': 'Off-road',
+    };
+
+    return labels[segment] || segment;
 }
 
 function selectHashtags(tireText: string, segment?: string) {
