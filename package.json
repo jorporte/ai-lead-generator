@@ -6,7 +6,8 @@
     "start": "tsx src/index.ts",
     "check": "tsc --noEmit",
     "refresh-token": "tsx scripts/refresh-token.ts",
-    "meta:auth": "tsx scripts/meta-auth.ts"
+    "meta:auth": "tsx scripts/meta-auth.ts",
+    "meta:validate": "tsx scripts/meta-validate.ts"
   },
   "keywords": [],
   "author": "",
