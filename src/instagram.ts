@@ -92,6 +92,7 @@ export async function publishDailyDeals(tireData: any) {
             markedUpPrice,
             setsCount,
             segment: tireData.segment,
+            tireText: `${brand} ${model} ${tireSize}`,
         });
 
         if (isDryRun()) {
@@ -173,10 +174,12 @@ function buildLeadCaption(input: {
     markedUpPrice: number;
     setsCount: number;
     segment?: string;
+    tireText: string;
 }) {
     const segmentLine = input.segment ? `Built for: ${formatSegment(input.segment)}\n` : '';
+    const hashtags = selectHashtags(input.tireText, input.segment);
 
-    return `Wholesale tire deal just landed.\n\n${input.brand} ${input.model}\nSize: ${input.tireSize}\n${segmentLine}Price: $${input.markedUpPrice.toFixed(2)} / tire (+ tax)\nInventory: ${input.setsCount} ${input.setsCount === 1 ? 'set' : 'sets'} available locally.\n\nSend us a DM to lock in your set before it moves.\n\n#RebelWheels #TireDeals #LocalBusiness`;
+    return `Wholesale tire deal just landed.\n\n${input.brand} ${input.model}\nSize: ${input.tireSize}\n${segmentLine}Price: $${input.markedUpPrice.toFixed(2)} / tire (+ tax)\nInventory: ${input.setsCount} ${input.setsCount === 1 ? 'set' : 'sets'} available locally.\n\nSend us a DM to lock in your set before it moves.\n\n${hashtags.join(' ')}`;
 }
 
 function formatSegment(segment: string) {
@@ -184,6 +187,71 @@ function formatSegment(segment: string) {
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
+}
+
+function selectHashtags(tireText: string, segment?: string) {
+    const normalized = tireText.toLowerCase();
+    const tags = new Set([
+        '#NLAutomotive',
+        '#NLCarCommunity',
+        '#StJohnsCars',
+        '#TireShopNL',
+        '#NewTires',
+    ]);
+
+    if (segment === 'truck-lt' || segment === 'off-road') {
+        tags.add('#NLTrucks');
+        tags.add('#NewfoundlandTrucks');
+    }
+
+    if (isWinterTireText(normalized)) {
+        tags.add('#NLWinter');
+        tags.add('#NewfoundlandWinter');
+        tags.add('#NLWeather');
+        tags.add('#WinterTiresNL');
+        tags.add('#WinterTires');
+    }
+
+    if (normalized.includes('studded') || normalized.includes('stud')) {
+        tags.add('#StuddedTires');
+    }
+
+    if (isAllSeasonTireText(normalized)) {
+        tags.add('#AllSeasonTires');
+    }
+
+    tags.add('#TireChange');
+
+    return Array.from(tags).slice(0, 12);
+}
+
+function isWinterTireText(normalized: string) {
+    return [
+        'winter',
+        'snow',
+        'ice',
+        'arctic',
+        'blizzak',
+        'x-ice',
+        'x ice',
+        'iceguard',
+        'hakkapeliitta',
+        'observe',
+        'wintercommand',
+        'winterforce',
+    ].some(keyword => normalized.includes(keyword));
+}
+
+function isAllSeasonTireText(normalized: string) {
+    return [
+        'all season',
+        'all-season',
+        'allseason',
+        'weatherready',
+        'crossclimate',
+        'assurance',
+        'defender',
+    ].some(keyword => normalized.includes(keyword));
 }
 
 export async function automateTokenExchange(shortLivedToken: string) {
