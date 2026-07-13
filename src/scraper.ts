@@ -114,13 +114,19 @@ export async function runScraper() {
         const dealsToPost = selectDealsForPosting(groupedBySize);
         console.log(`📌 Selected ${dealsToPost.length} deal(s) for automatic social posting.`);
 
+        const hydratedDeals: TireDeal[] = [];
+
         for (const deal of dealsToPost) {
             console.log(`🎯 Selected ${deal.segment || 'general'} deal: ${deal.scannedSize} ${deal.brand} ${deal.model} at $${deal.salePrice.toFixed(2)} (${deal.discountPercent}% off, ${deal.quantityAvailable} units).`);
             const finalImage = await resolveHighResImage(page, deal);
             if (isDryRun()) {
                 console.log(`🧪 DRY_RUN enabled. Resolved image candidate: ${finalImage || 'none'}`);
             }
-            await publishDailyDeals({ ...deal, highResImageUrl: finalImage, size: deal.scannedSize, price: deal.salePrice });
+            hydratedDeals.push({ ...deal, highResImageUrl: finalImage });
+        }
+
+        if (hydratedDeals.length > 0) {
+            await publishDailyDeals(hydratedDeals);
         }
     } finally {
         await browser.close();

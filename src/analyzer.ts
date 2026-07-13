@@ -10,6 +10,7 @@ export type TireDeal = {
     quantityAvailable: number;
     ajaxUrl: string;
     thumbUrl: string;
+    highResImageUrl?: string;
     segment?: CustomerSegment;
     leadScore?: number;
 };
@@ -18,7 +19,7 @@ export type GroupedDeals = Record<string, TireDeal[]>;
 
 const MINIMUM_SET_QUANTITY = Number(process.env.MIN_DEAL_QUANTITY || 4);
 const MINIMUM_DISCOUNT_PERCENT = Number(process.env.MIN_DISCOUNT_PERCENT || 10);
-const MAX_POSTS_PER_RUN = Number(process.env.MAX_POSTS_PER_RUN || 1);
+const MAX_POSTS_PER_RUN = Number(process.env.MAX_POSTS_PER_RUN || process.env.MAX_CAROUSEL_ITEMS || 4);
 
 export const CORE_TIRE_SIZES = [
     '195/65r15',
