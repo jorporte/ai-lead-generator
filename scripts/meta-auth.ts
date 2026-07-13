@@ -49,7 +49,7 @@ async function main() {
         throw new Error('No Facebook Pages were returned. Confirm your Facebook user has full control of the Rebel Wheels Page.');
     }
 
-    const selectedPage = selectPage(pages);
+    const selectedPage = await selectPage(pages);
     const instagramAccountId = await fetchInstagramBusinessAccountId(selectedPage.id, selectedPage.access_token);
 
     if (!instagramAccountId) {
@@ -152,22 +152,41 @@ async function fetchPages(accessToken: string) {
     return response.data.data as PageAccount[];
 }
 
-function selectPage(pages: PageAccount[]) {
+async function selectPage(pages: PageAccount[]) {
+    const preferredPageId = process.env.FACEBOOK_PAGE_ID;
+    if (preferredPageId) {
+        const preferredPage = pages.find(page => page.id === preferredPageId);
+        if (preferredPage) return preferredPage;
+
+        throw new Error(`FACEBOOK_PAGE_ID=${preferredPageId} was not returned by Meta. Confirm your Facebook user has access to that Page.`);
+    }
+
     const preferredPageName = process.env.FACEBOOK_PAGE_NAME?.toLowerCase();
     if (preferredPageName) {
         const preferredPage = pages.find(page => page.name.toLowerCase().includes(preferredPageName));
         if (preferredPage) return preferredPage;
+
+        throw new Error(`FACEBOOK_PAGE_NAME="${process.env.FACEBOOK_PAGE_NAME}" did not match any returned Page.`);
     }
 
     if (pages.length === 1) return pages[0]!;
 
-    console.log('Multiple Pages were returned. Set FACEBOOK_PAGE_NAME in .env to choose a specific one.');
-    pages.forEach((page, index) => {
-        console.log(`${index + 1}. ${page.name} (${page.id})`);
+    const pagesWithInstagram = [];
+    for (const page of pages) {
+        const instagramAccountId = await fetchInstagramBusinessAccountId(page.id, page.access_token);
+        if (instagramAccountId) {
+            pagesWithInstagram.push(page);
+        }
+    }
+
+    if (pagesWithInstagram.length === 1) return pagesWithInstagram[0]!;
+
+    console.log('Multiple Pages were returned. Add FACEBOOK_PAGE_ID or FACEBOOK_PAGE_NAME to .env to choose the correct one.');
+    pages.forEach(page => {
+        console.log(`- ${page.name} (${page.id})`);
     });
 
-    console.log('\nDefaulting to the first returned Page for now.\n');
-    return pages[0]!;
+    throw new Error('Could not safely choose a Facebook Page automatically.');
 }
 
 async function fetchInstagramBusinessAccountId(pageId: string, pageAccessToken: string) {
