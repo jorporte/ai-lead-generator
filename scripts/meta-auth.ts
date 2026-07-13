@@ -25,6 +25,7 @@ async function main() {
     const appId = process.env.META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
     const redirectUri = process.env.META_REDIRECT_URI || DEFAULT_REDIRECT_URI;
+    const loginConfigId = process.env.META_LOGIN_CONFIG_ID;
 
     if (!appId || !appSecret) {
         throw new Error('META_APP_ID and META_APP_SECRET are required in .env before running npm run meta:auth.');
@@ -35,6 +36,9 @@ async function main() {
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('scope', REQUIRED_SCOPES.join(','));
     authUrl.searchParams.set('response_type', 'code');
+    if (loginConfigId) {
+        authUrl.searchParams.set('config_id', loginConfigId);
+    }
 
     console.log('\nOpen this URL in your browser and approve the requested Page/Instagram permissions:\n');
     console.log(authUrl.toString());
@@ -46,6 +50,7 @@ async function main() {
     const pages = await fetchPages(longLivedToken);
 
     if (pages.length === 0) {
+        await printGrantedPermissions(longLivedToken);
         throw new Error('No Facebook Pages were returned. Confirm your Facebook user has full control of the Rebel Wheels Page.');
     }
 
@@ -150,6 +155,22 @@ async function fetchPages(accessToken: string) {
     });
 
     return response.data.data as PageAccount[];
+}
+
+async function printGrantedPermissions(accessToken: string) {
+    try {
+        const response = await axios.get(`https://graph.facebook.com/${GRAPH_VERSION}/me/permissions`, {
+            params: { access_token: accessToken },
+        });
+
+        console.log('\nGranted token permissions returned by Meta:');
+        for (const permission of response.data.data || []) {
+            console.log(`- ${permission.permission}: ${permission.status}`);
+        }
+        console.log('');
+    } catch (error: any) {
+        console.log('\nCould not inspect token permissions:', error.response?.data || error.message || error);
+    }
 }
 
 async function selectPage(pages: PageAccount[]) {
