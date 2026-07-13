@@ -1,0 +1,28 @@
+{
+  "name": "rebeldealhunter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "check": "tsc --noEmit",
+    "refresh-token": "tsx scripts/refresh-token.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "axios": "^1.18.1",
+    "dotenv": "^17.4.2",
+    "openai": "^6.45.0",
+    "playwright": "^1.61.1",
+    "sharp": "^0.35.2",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

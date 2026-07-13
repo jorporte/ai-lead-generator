@@ -1,0 +1,10 @@
+.env
+.DS_Store
+node_modules/
+auth/state.json
+data/*.html
+data/*.json
+data/*.log
+logs/*.log
+sample_search.html
+*.tsbuildinfo
