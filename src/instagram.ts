@@ -8,6 +8,8 @@ import * as path from 'path';
 import { isDryRun } from './config';
 import type { TireDeal } from './analyzer';
 
+const ws = require('ws');
+
 type PreparedDeal = {
     deal: TireDeal;
     brand: string;
@@ -28,7 +30,8 @@ function getSupabaseClient() {
 
     return createClient(url, key, { 
         auth: { persistSession: false }, 
-        global: { fetch: (...args) => fetch(...args) }
+        global: { fetch: (...args) => fetch(...args) },
+        realtime: { transport: ws }
     });
 }
 
