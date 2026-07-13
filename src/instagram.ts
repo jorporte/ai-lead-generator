@@ -45,9 +45,11 @@ export async function publishDailyDeals(tireData: TireDeal | TireDeal[]) {
         const caption = buildCarouselCaption(preparedDeals);
 
         if (isDryRun()) {
+            const previewUrls = writeDryRunPreviews(preparedDeals);
             console.log(`🧪 DRY_RUN enabled. Generated ${preparedDeals.length} flyer(s) in memory; Supabase, Instagram, and Facebook publishing skipped.`);
             preparedDeals.forEach((preparedDeal, index) => {
                 console.log(`🧪 Flyer ${index + 1} bytes: ${preparedDeal.flyerBuffer.length}`);
+                console.log(`🧪 Flyer ${index + 1} preview URL: ${previewUrls[index]}`);
             });
             console.log(`🧪 Caption preview:\n${caption}`);
             return;
@@ -160,6 +162,25 @@ async function uploadFlyersToSupabase(supabase: ReturnType<typeof getSupabaseCli
     }
 
     return urls;
+}
+
+function writeDryRunPreviews(preparedDeals: PreparedDeal[]) {
+    const outputDir = path.join(__dirname, '../data/dry-run');
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    return preparedDeals.map((preparedDeal, index) => {
+        const safeSegment = sanitizeFilePart(preparedDeal.deal.segment || 'deal');
+        const safeSize = sanitizeFilePart(preparedDeal.tireSize);
+        const fileName = `dry_run_${Date.now()}_${index + 1}_${safeSegment}_${safeSize}.jpg`;
+        const filePath = path.join(outputDir, fileName);
+
+        fs.writeFileSync(filePath, preparedDeal.flyerBuffer);
+        return `file://${filePath}`;
+    });
+}
+
+function sanitizeFilePart(value: string) {
+    return value.replace(/[^a-z0-9-]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase();
 }
 
 async function publishInstagramMedia(instagramAccountId: string, accessToken: string, publicImageUrls: string[], caption: string) {
