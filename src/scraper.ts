@@ -105,10 +105,13 @@ export async function runScraper() {
                     };
                 });
             }, size) as TireDeal[];
+
+            logSizeScanSummary(size, pageResults);
             masterInventoryList.push(...pageResults);
         }
 
         const groupedBySize: GroupedDeals = groupQualifiedDeals(masterInventoryList);
+        logInventorySummary(masterInventoryList, groupedBySize);
 
         fs.writeFileSync(DATA_OUTPUT_PATH, JSON.stringify(groupedBySize, null, 2));
         await sendTelegramAlert(groupedBySize); 
@@ -138,6 +141,25 @@ export async function runScraper() {
 function ensureRuntimeDirectories() {
     fs.mkdirSync(path.dirname(STORAGE_STATE_PATH), { recursive: true });
     fs.mkdirSync(path.dirname(DATA_OUTPUT_PATH), { recursive: true });
+}
+
+function logSizeScanSummary(size: string, deals: TireDeal[]) {
+    const withPrice = deals.filter(deal => deal.salePrice > 0).length;
+    const withStock = deals.filter(deal => deal.quantityAvailable > 0).length;
+    const qualified = deals.filter(deal => deal.salePrice > 0 && deal.quantityAvailable >= 4 && deal.discountPercent >= 10).length;
+    const maxStock = Math.max(0, ...deals.map(deal => deal.quantityAvailable));
+    const maxDiscount = Math.max(0, ...deals.map(deal => deal.discountPercent));
+
+    console.log(`🔎 ${size}: ${deals.length} cards, ${withPrice} priced, ${withStock} stocked, ${qualified} qualified, max stock ${maxStock}, max discount ${maxDiscount}%`);
+}
+
+function logInventorySummary(allDeals: TireDeal[], groupedBySize: GroupedDeals) {
+    const qualifiedCount = Object.values(groupedBySize).reduce((sum, deals) => sum + deals.length, 0);
+    const sizesWithQualifiedDeals = Object.keys(groupedBySize).length;
+    const totalStocked = allDeals.filter(deal => deal.quantityAvailable > 0).length;
+    const totalPriced = allDeals.filter(deal => deal.salePrice > 0).length;
+
+    console.log(`📊 Inventory scan summary: ${allDeals.length} total cards, ${totalPriced} priced, ${totalStocked} stocked, ${qualifiedCount} qualified across ${sizesWithQualifiedDeals} sizes.`);
 }
 
 async function resolveHighResImage(page: Page, deal: TireDeal) {
