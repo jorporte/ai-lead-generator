@@ -11,8 +11,14 @@ export type TireDeal = {
     ajaxUrl: string;
     thumbUrl: string;
     highResImageUrl?: string;
+    customerSpecs?: CustomerSpec[];
     segment?: CustomerSegment;
     leadScore?: number;
+};
+
+export type CustomerSpec = {
+    label: string;
+    value: string;
 };
 
 export type GroupedDeals = Record<string, TireDeal[]>;

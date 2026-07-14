@@ -1,0 +1,174 @@
+diff --git a/src/instagram.ts b/src/instagram.ts
+index c35acb1..83bd1cd 100644
+--- a/src/instagram.ts
++++ b/src/instagram.ts
+@@ -16,6 +16,8 @@ type PreparedDeal = {
+     model: string;
+     tireSize: string;
+     markedUpPrice: number;
++    regularPrice: number;
++    discountPercent: number;
+     setsCount: number;
+     flyerBuffer: Buffer;
+ };
+@@ -88,12 +90,19 @@ async function prepareDealFlyer(deal: TireDeal): Promise<PreparedDeal> {
+     const availableVolume = deal.quantityAvailable || 4;
+     const setsCount = Math.floor(availableVolume / 4);
+     const markedUpPrice = Math.max(deal.salePrice * 1.10, 75);
++    const regularPrice = deal.baselinePrice > deal.salePrice
++        ? Math.max(deal.baselinePrice * 1.10, markedUpPrice)
++        : 0;
++    const discountPercent = Math.max(Math.round(deal.discountPercent), 0);
++    const flyerBrand = escapeSvgText(truncateText(brand.toUpperCase(), 18));
++    const flyerModel = escapeSvgText(truncateText(model, 32));
++    const flyerTireSize = escapeSvgText(tireSize);
+ 
+     if (!rawPrice) {
+         throw new Error(`Cannot generate flyer for ${brand} ${model}; missing sale price.`);
+     }
+ 
+-    console.log(`🎨 Generating social flyer canvas asset for ${brand} — Market retail target: $${markedUpPrice.toFixed(2)} (+ Tax)`);
++    console.log(`🎨 Generating Rebel Wheels flyer for ${brand} — Sale $${markedUpPrice.toFixed(2)} vs regular $${regularPrice.toFixed(2)} (+ Tax)`);
+ 
+     let tireImageBuffer: Buffer;
+     if (deal.highResImageUrl) {
+@@ -101,37 +110,63 @@ async function prepareDealFlyer(deal: TireDeal): Promise<PreparedDeal> {
+         tireImageBuffer = Buffer.from(imageResponse.data);
+     } else {
+         tireImageBuffer = await sharp({
+-            create: { width: 400, height: 400, channels: 3, background: { r: 30, g: 41, b: 59 } }
++            create: { width: 400, height: 400, channels: 3, background: { r: 12, g: 12, b: 12 } }
+         }).png().toBuffer();
+     }
+ 
+     const processedTireImage = await sharp(tireImageBuffer)
+-        .resize(700, 700, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
++        .resize(720, 720, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+         .toBuffer();
+ 
+-    const svgOverlay = `
+-        <svg width="1080" height="1080" xmlns="http://www.w3.org/2000/svg">
+-            <rect x="0" y="780" width="1080" height="300" fill="#1e293b" opacity="0.95"/>
+-            <line x1="0" y1="780" x2="1080" y2="780" stroke="#3b82f6" stroke-width="8"/>
+-
+-            <text x="60" y="850" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="bold" fill="#ffffff">${brand.toUpperCase()}</text>
+-            <text x="60" y="910" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#94a3b8">${model}</text>
+-            <text x="60" y="990" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="bold" fill="#3b82f6">SIZE: ${tireSize}</text>
++    const accentColor = '#f4f1e8';
++    const mutedText = '#aaa7a0';
+ 
+-            <text x="1020" y="860" font-family="Arial, Helvetica, sans-serif" font-size="75" font-weight="bold" fill="#22c55e" text-anchor="end">$${markedUpPrice.toFixed(2)}</text>
+-            <text x="1020" y="910" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#94a3b8" text-anchor="end">EACH (+ TAX)</text>
++    const backgroundLayer = `
++        <svg width="1080" height="1080" xmlns="http://www.w3.org/2000/svg">
++            <rect x="0" y="0" width="1080" height="1080" fill="#060606"/>
++            <polygon points="585,0 1080,0 1080,780 770,780" fill="#101010"/>
++            <polygon points="0,780 1080,780 1080,1080 0,1080" fill="#121212"/>
++            <line x1="0" y1="780" x2="1080" y2="780" stroke="${accentColor}" stroke-width="4"/>
++            <line x1="58" y1="58" x2="412" y2="58" stroke="${accentColor}" stroke-width="4"/>
++            <line x1="58" y1="58" x2="58" y2="414" stroke="${accentColor}" stroke-width="4"/>
++            <line x1="1022" y1="1022" x2="668" y2="1022" stroke="${accentColor}" stroke-width="4"/>
++            <line x1="1022" y1="1022" x2="1022" y2="666" stroke="${accentColor}" stroke-width="4"/>
++            <line x1="36" y1="713" x2="270" y2="713" stroke="${accentColor}" stroke-width="12"/>
++            <line x1="36" y1="739" x2="206" y2="739" stroke="${accentColor}" stroke-width="12"/>
++            <line x1="36" y1="765" x2="142" y2="765" stroke="${accentColor}" stroke-width="12"/>
++        </svg>
++    `;
+ 
+-            <rect x="760" y="950" width="260" height="50" rx="25" fill="#ef4444"/>
+-            <text x="890" y="985" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">${setsCount} ${setsCount === 1 ? 'SET' : 'SETS'} AVAILABLE</text>
++    const foregroundLayer = `
++        <svg width="1080" height="1080" xmlns="http://www.w3.org/2000/svg">
++            ${discountPercent > 0 ? `
++            <text x="72" y="178" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="bold" fill="${accentColor}">${discountPercent}%</text>
++            <text x="76" y="230" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="bold" fill="${accentColor}">OFF</text>
++            ` : ''}
++
++            <text x="74" y="370" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="bold" fill="#ffffff">${flyerBrand}</text>
++            <text x="74" y="424" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="${mutedText}">${flyerModel}</text>
++            <text x="74" y="500" font-family="Arial, Helvetica, sans-serif" font-size="39" font-weight="bold" fill="#ffffff">${flyerTireSize}</text>
++
++            ${regularPrice > 0 ? `
++            <text x="74" y="845" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="bold" fill="${mutedText}">WAS $${regularPrice.toFixed(2)}</text>
++            <line x1="74" y1="835" x2="265" y2="835" stroke="${accentColor}" stroke-width="5"/>
++            ` : ''}
++            <text x="74" y="935" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="bold" fill="#ffffff">$${markedUpPrice.toFixed(2)}</text>
++            <text x="76" y="984" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="${mutedText}">EACH + TAX</text>
++
++            <rect x="772" y="850" width="236" height="58" fill="none" stroke="${accentColor}" stroke-width="3"/>
++            <text x="890" y="888" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="${accentColor}" text-anchor="middle">${setsCount} ${setsCount === 1 ? 'SET' : 'SETS'} LOCAL</text>
+         </svg>
+     `;
+ 
+     const flyerBuffer = await sharp({
+-        create: { width: 1080, height: 1080, channels: 4, background: { r: 15, g: 23, b: 42, alpha: 1 } }
++        create: { width: 1080, height: 1080, channels: 4, background: { r: 10, g: 10, b: 10, alpha: 1 } }
+     })
+     .composite([
+-        { input: processedTireImage, top: 50, left: 190 },
+-        { input: Buffer.from(svgOverlay), top: 0, left: 0 }
++        { input: Buffer.from(backgroundLayer), top: 0, left: 0 },
++        { input: processedTireImage, top: 120, left: 380 },
++        { input: Buffer.from(foregroundLayer), top: 0, left: 0 }
+     ])
+     .jpeg({ quality: 95 })
+     .toBuffer();
+@@ -142,6 +177,8 @@ async function prepareDealFlyer(deal: TireDeal): Promise<PreparedDeal> {
+         model,
+         tireSize,
+         markedUpPrice,
++        regularPrice,
++        discountPercent,
+         setsCount,
+         flyerBuffer,
+     };
+@@ -186,6 +223,20 @@ function sanitizeFilePart(value: string) {
+     return value.replace(/[^a-z0-9-]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase();
+ }
+ 
++function truncateText(value: string, maxLength: number) {
++    if (value.length <= maxLength) return value;
++    return `${value.slice(0, maxLength - 3)}...`;
++}
++
++function escapeSvgText(value: string) {
++    return value
++        .replace(/&/g, '&amp;')
++        .replace(/</g, '&lt;')
++        .replace(/>/g, '&gt;')
++        .replace(/"/g, '&quot;')
++        .replace(/'/g, '&apos;');
++}
++
+ async function publishInstagramMedia(instagramAccountId: string, accessToken: string, publicImageUrls: string[], caption: string) {
+     if (publicImageUrls.length === 1) {
+         console.log('🛰️ Initializing Instagram image upload stage...');
+@@ -296,12 +347,16 @@ async function getFacebookPageAccessToken(pageId: string) {
+ 
+ function buildCarouselCaption(preparedDeals: PreparedDeal[]) {
+     const intro = preparedDeals.length === 1
+-        ? 'Wholesale tire deal just landed.'
+-        : `Wholesale tire drop just landed: ${preparedDeals.length} deals across different driving needs.`;
++        ? 'Rebel Wheels and Tires deal just landed.'
++        : `Rebel Wheels and Tires deal drop: ${preparedDeals.length} tire offers across different driving needs.`;
+ 
+     const dealLines = preparedDeals.map((preparedDeal, index) => {
+         const segmentLine = preparedDeal.deal.segment ? ` (${formatSegment(preparedDeal.deal.segment)})` : '';
+-        return `${index + 1}. ${preparedDeal.brand} ${preparedDeal.model}${segmentLine}\nSize: ${preparedDeal.tireSize}\nPrice: $${preparedDeal.markedUpPrice.toFixed(2)} / tire (+ tax)\nInventory: ${preparedDeal.setsCount} ${preparedDeal.setsCount === 1 ? 'set' : 'sets'} available locally.`;
++        const regularLine = preparedDeal.regularPrice > 0
++            ? `Regular: $${preparedDeal.regularPrice.toFixed(2)} / tire\nRebel price: $${preparedDeal.markedUpPrice.toFixed(2)} / tire (+ tax)\nDiscount: ${preparedDeal.discountPercent}% off`
++            : `Rebel price: $${preparedDeal.markedUpPrice.toFixed(2)} / tire (+ tax)`;
++
++        return `${index + 1}. ${preparedDeal.brand} ${preparedDeal.model}${segmentLine}\nSize: ${preparedDeal.tireSize}\n${regularLine}\nInventory: ${preparedDeal.setsCount} ${preparedDeal.setsCount === 1 ? 'set' : 'sets'} available locally.`;
+     });
+ 
+     const hashtags = selectHashtags(
+@@ -309,7 +364,7 @@ function buildCarouselCaption(preparedDeals: PreparedDeal[]) {
+         preparedDeals.map(preparedDeal => preparedDeal.deal.segment).filter(Boolean).join(' ')
+     );
+ 
+-    return `${intro}\n\n${dealLines.join('\n\n')}\n\nSend us a DM to lock in a set before it moves.\n\n${hashtags.join(' ')}`;
++    return `${intro}\n\n${dealLines.join('\n\n')}\n\nSend Rebel Wheels and Tires a DM to lock in a set before it moves.\n\n${hashtags.join(' ')}`;
+ }
+ 
+ function formatSegment(segment: string) {

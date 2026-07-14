@@ -36,6 +36,9 @@ Code snippet
 # --- DT Tire Dealer Hub Access ---
 DT_TIRE_USER="your_dealer_username"
 DT_TIRE_PASS="your_secure_password"
+BROWSER_HEADLESS=true # Set to false to watch Playwright run visually
+DEV_MODE=false # Set to true to scan one random tire size per run
+BRAND_LOGO_PATH=assets/rebel-logo.png # Small upper-right logo on generated flyers
 
 # --- Telegram Messenger Bot API ---
 TELEGRAM_BOT_TOKEN="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
@@ -48,6 +51,8 @@ SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsIn..."
 # --- Meta Integration Core Access ---
 INSTAGRAM_ACCOUNT_ID="your_instagram_business_numeric_id"
 INSTAGRAM_ACCESS_TOKEN="EAAM..."
+
+Development runs also write `data/extraction_debug.json`, which preserves richer raw card text, visible text lines, guessed spec key/value pairs, and product identifiers from the DT Tire search results. Use this file to choose which dashboard specs are worth promoting on the generated flyer.
 🚀 Transferring & Initializing on a New Desktop
 Desktops are optimized to run 24/7. To migrate the code from your MacBook Pro to a dedicated desktop machine, execute these initialization steps:
 
