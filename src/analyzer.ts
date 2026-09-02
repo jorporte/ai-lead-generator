@@ -9,7 +9,14 @@ export type TireDeal = {
     discountPercent: number;
     quantityAvailable: number;
     ajaxUrl: string;
+    productUrl?: string;
+    searchUrl?: string;
+    productCode?: string;
+    sku?: string;
     thumbUrl: string;
+    isOnSale?: boolean;
+    isChangeover?: boolean;
+    availability?: string;
     highResImageUrl?: string;
     customerSpecs?: CustomerSpec[];
     segment?: CustomerSegment;
@@ -24,6 +31,7 @@ export type CustomerSpec = {
 export type GroupedDeals = Record<string, TireDeal[]>;
 
 const MINIMUM_SET_QUANTITY = Number(process.env.MIN_DEAL_QUANTITY || 4);
+const MINIMUM_CHANGEOVER_QUANTITY = 4;
 const MINIMUM_DISCOUNT_PERCENT = Number(process.env.MIN_DISCOUNT_PERCENT || 10);
 const MAX_POSTS_PER_RUN = Number(process.env.MAX_POSTS_PER_RUN || process.env.MAX_CAROUSEL_ITEMS || 4);
 
@@ -95,6 +103,27 @@ export function groupQualifiedDeals(deals: TireDeal[]): GroupedDeals {
     }
 
     return grouped;
+}
+
+export function selectChangeoverDeals(deals: TireDeal[]): TireDeal[] {
+    const uniqueDeals = new Map<string, TireDeal>();
+
+    for (const deal of deals) {
+        if (!deal.isChangeover
+            || deal.quantityAvailable < MINIMUM_CHANGEOVER_QUANTITY
+            || !deal.brand
+            || !deal.model) continue;
+
+        const key = deal.productCode
+            || deal.productUrl
+            || deal.ajaxUrl
+            || `${deal.scannedSize}:${deal.brand}:${deal.model}`;
+
+        uniqueDeals.set(key, deal);
+    }
+
+    return Array.from(uniqueDeals.values())
+        .sort((a, b) => b.discountPercent - a.discountPercent);
 }
 
 export function selectDealsForPosting(groupedDeals: GroupedDeals): TireDeal[] {
