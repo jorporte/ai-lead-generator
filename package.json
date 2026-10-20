@@ -5,6 +5,8 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "check": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "quotes": "tsx scripts/quotes.ts",
     "refresh-token": "tsx scripts/refresh-token.ts",
     "meta:auth": "tsx scripts/meta-auth.ts",
     "meta:validate": "tsx scripts/meta-validate.ts"

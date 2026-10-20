@@ -1,6 +1,13 @@
 Markdown
 # 🛞 Rebel Wheels Daily Deal Hunter & Social Marketer
 
+## Quoting project
+
+Work tracking: [RWT — Quoting & Lead Generation](https://github.com/users/jorporte/projects/1).
+The first quote-engine increment is documented in [docs/quoting.md](docs/quoting.md).
+It provides owner-run calculations and immutable quote IDs/revisions; public estimates
+and automated competitor research are subsequent tracked work.
+
 [cite_start]An autonomous wholesale arbitrage engine designed to monitor distributor pipelines, isolate premium clearance pricing trends, and distribute promotional flyer creatives natively to customer-facing channels[cite: 3, 409, 588].
 
 ---
